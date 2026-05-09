@@ -1,0 +1,61 @@
+{
+  "nas_ip": {
+    "description": "NAS/跳板机 IP 地址（用于 SSH 转发 WOL 和关机指令）",
+    "type": "string",
+    "default": "100.80.116.113",
+    "hint": "你的 NAS 或中转服务器 IP"
+  },
+  "nas_user": {
+    "description": "NAS SSH 用户名",
+    "type": "string",
+    "default": "root"
+  },
+  "nas_pass": {
+    "description": "NAS SSH 密码",
+    "type": "string",
+    "default": "",
+    "hint": "NAS 的 SSH 登录密码"
+  },
+  "pc_ip": {
+    "description": "目标电脑的内网 IP",
+    "type": "string",
+    "default": "",
+    "hint": "如 192.168.31.206",
+    "obvious_hint": true
+  },
+  "pc_user": {
+    "description": "Windows 登录用户名",
+    "type": "string",
+    "default": "",
+    "hint": "用于 SSH 连接和关机指令"
+  },
+  "pc_pass": {
+    "description": "Windows 登录密码",
+    "type": "string",
+    "default": "",
+    "hint": "用于 SSH 连接和关机指令，仅本地存储"
+  },
+  "pc_mac": {
+    "description": "目标电脑的 MAC 地址（WOL 唤醒用）",
+    "type": "string",
+    "default": "",
+    "hint": "如 AA:BB:CC:DD:EE:FF",
+    "obvious_hint": true
+  },
+  "broadcast_ip": {
+    "description": "WOL 广播地址",
+    "type": "string",
+    "default": "192.168.31.255",
+    "hint": "根据你的局域网网段填写"
+  },
+  "nas_target": {
+    "description": "NAS 连通性测试 URL",
+    "type": "string",
+    "default": "http://192.168.21.42/health"
+  },
+  "web_port": {
+    "description": "Web 控制台端口",
+    "type": "int",
+    "default": 5800
+  }
+}

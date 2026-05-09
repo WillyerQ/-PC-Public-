@@ -1,0 +1,8 @@
+name: "pc_control"
+display_name: "PC 远程控制"
+short_desc: "通过米家/WebUI 远程 WOL 唤醒和关机你的 PC"
+desc: "提供 Web 控制台和 HTTP API，支持米家自动化调用。功能：WOL 网络唤醒、远程关机、状态检查、NAS 连通性测试"
+version: "1.0.0"
+author: "AstrBot"
+repo: "https://github.com/WillyerQ/-PC-Public-"
+astrbot_version: ">=4.16"

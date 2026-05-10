@@ -92,5 +92,54 @@
     "description": "Windows 关机延迟秒数",
     "type": "int",
     "default": 10
+  },
+  "ha_mqtt_enabled": {
+    "description": "启用 Home Assistant MQTT 自动发现",
+    "type": "bool",
+    "default": false,
+    "hint": "启用后 HA 会自动发现一个“电脑电源”开关实体"
+  },
+  "ha_mqtt_host": {
+    "description": "Home Assistant MQTT Broker 地址",
+    "type": "string",
+    "default": "",
+    "hint": "通常是 Home Assistant IP，需先安装/启用 Mosquitto broker 或其它 MQTT broker"
+  },
+  "ha_mqtt_port": {
+    "description": "MQTT Broker 端口",
+    "type": "int",
+    "default": 1883
+  },
+  "ha_mqtt_username": {
+    "description": "MQTT 用户名",
+    "type": "string",
+    "default": ""
+  },
+  "ha_mqtt_password": {
+    "description": "MQTT 密码",
+    "type": "string",
+    "default": ""
+  },
+  "ha_mqtt_discovery_prefix": {
+    "description": "Home Assistant MQTT discovery prefix",
+    "type": "string",
+    "default": "homeassistant"
+  },
+  "ha_mqtt_node_id": {
+    "description": "MQTT 设备节点 ID",
+    "type": "string",
+    "default": "astrbot_pc_control",
+    "hint": "同一 MQTT Broker 内需唯一；修改后 HA 会生成新实体"
+  },
+  "ha_mqtt_device_name": {
+    "description": "Home Assistant 中显示的设备名称",
+    "type": "string",
+    "default": "电脑"
+  },
+  "ha_mqtt_status_interval": {
+    "description": "MQTT 状态刷新间隔秒数",
+    "type": "int",
+    "default": 60,
+    "hint": "最低按 15 秒处理，太小会频繁 SSH 检查状态"
   }
 }

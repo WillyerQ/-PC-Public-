@@ -5,6 +5,7 @@
 - AstrBot 指令：`/pc wol`、`/pc off`、`/pc status`、`/pc nas`、`/pc config`
 - Web 控制台：浏览器操作
 - HTTP API：给米家/小米 IoT 自动化或其它 Webhook 调用
+- Home Assistant：通过 MQTT Discovery 自动生成“电脑电源”开关实体
 
 实现远程 WOL 唤醒、Windows 关机、进程状态检查和 NAS 连通性测试。
 
@@ -12,7 +13,7 @@
 
 1. 将本目录放到 `AstrBot/data/plugins/pc_control/`。
 2. 确保 AstrBot 所在机器能访问 NAS/跳板机。
-3. AstrBot 运行环境安装 `sshpass`、`ssh`。
+3. AstrBot 运行环境安装 `sshpass`、`ssh`；如启用 Home Assistant MQTT，还需安装 `paho-mqtt`。
 4. NAS/跳板机安装 `wakeonlan` 和 `curl`，并允许 SSH 登录。
 5. Windows 电脑开启 OpenSSH Server，并允许 NAS 访问。
 6. 在 AstrBot 插件管理页重载插件并填写配置。
@@ -29,6 +30,10 @@
 | `pc_mac` / `broadcast_ip` | WOL 唤醒需要的 MAC 与广播地址 |
 | `game_process` | 状态检查匹配的进程名 |
 | `shutdown_delay` | 关机延迟秒数 |
+| `ha_mqtt_enabled` | 是否启用 Home Assistant MQTT 自动发现 |
+| `ha_mqtt_host` / `ha_mqtt_port` | Home Assistant MQTT Broker 地址和端口 |
+| `ha_mqtt_username` / `ha_mqtt_password` | MQTT 用户名和密码 |
+| `ha_mqtt_device_name` | HA 中显示的设备名，默认 `电脑` |
 
 插件本地覆盖配置写入：
 
@@ -82,6 +87,66 @@ Authorization: Bearer 你的token
 
 > 安全提示：不要把控制端口直接暴露到公网。建议使用内网、VPN、反向代理鉴权或防火墙白名单。
 
+## Home Assistant 接入方式（推荐连接米家）
+
+米家 App 本身通常不能直接填写 HTTP API。推荐路径是：
+
+```text
+米家设备/按钮/传感器 → Home Assistant → 本插件 MQTT 开关 → NAS/PC
+```
+
+### 1. Home Assistant 准备 MQTT
+
+在 Home Assistant 中安装并启用 MQTT Broker，例如 Mosquitto broker，然后确认 MQTT 集成可用。
+
+### 2. AstrBot 安装 MQTT 依赖
+
+在 AstrBot 的 Python 环境安装：
+
+```bash
+pip install paho-mqtt
+```
+
+### 3. 插件里填写 HA MQTT 配置
+
+在 AstrBot 插件配置页填写：
+
+```text
+ha_mqtt_enabled = true
+ha_mqtt_host = Home Assistant 的 IP
+ha_mqtt_port = 1883
+ha_mqtt_username = 你的 MQTT 用户名
+ha_mqtt_password = 你的 MQTT 密码
+ha_mqtt_discovery_prefix = homeassistant
+ha_mqtt_node_id = astrbot_pc_control
+ha_mqtt_device_name = 电脑
+ha_mqtt_status_interval = 60
+```
+
+重载插件后，Home Assistant 会通过 MQTT Discovery 自动出现一个开关实体，名称类似：
+
+```text
+switch.电脑_电源
+```
+
+如果没有出现，检查：
+
+- HA 的 MQTT 集成是否启用了 Discovery
+- `ha_mqtt_discovery_prefix` 是否为 `homeassistant`
+- AstrBot 日志里是否有 `HA MQTT 已连接并发布自动发现配置`
+- AstrBot 环境是否安装了 `paho-mqtt`
+
+### 4. 米家如何间接控制
+
+如果你已经把米家接入 Home Assistant，例如通过 Xiaomi Miot Auto、Matter、HomeKit Bridge 或其它方式，之后就在 HA 自动化里写：
+
+```text
+当米家按钮单击 → 打开 switch.电脑_电源
+当米家按钮双击 → 关闭 switch.电脑_电源
+```
+
+这样米家不需要填 API，API/MQTT 都由 HA 和插件处理。
+
 ## AstrBot 指令
 
 ```text
@@ -98,5 +163,6 @@ Authorization: Bearer 你的token
 - 配置 schema 独立在 `_conf_schema.json`。
 - 运行数据不写插件源码目录，统一放入 `data/plugin_data/pc_control/`。
 - HTTP API 同时提供 `/api/*` 与面向米家自动化更直观的 `/mi/*` 别名。
+- 支持 Home Assistant MQTT Discovery，自动生成开关实体。
 - 默认要求 Token；避免误暴露控制接口。
 - 增加 SSH 端口、关机延迟、CORS、健康检查与更清晰的 JSON 返回。

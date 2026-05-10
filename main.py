@@ -15,6 +15,7 @@ import os
 import re
 import shlex
 import subprocess
+import sys
 import threading
 import time
 from dataclasses import dataclass
@@ -144,6 +145,25 @@ def _as_bool(value: Any) -> bool:
     if isinstance(value, str):
         return value.strip().lower() in {"1", "true", "yes", "on", "y"}
     return bool(value)
+
+
+
+def _ensure_paho_mqtt_installed() -> bool:
+    try:
+        import paho.mqtt.client  # noqa: F401
+        return True
+    except Exception:
+        pass
+
+    logger.warning("[PC-Control] 未检测到 paho-mqtt，开始自动安装")
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "paho-mqtt>=1.6.1"])
+        import paho.mqtt.client  # noqa: F401
+        logger.info("[PC-Control] paho-mqtt 自动安装完成")
+        return True
+    except Exception as exc:
+        logger.error(f"[PC-Control] paho-mqtt 自动安装失败，请手动执行: {sys.executable} -m pip install paho-mqtt>=1.6.1；错误: {exc}")
+        return False
 
 
 def _safe_process_name(name: str) -> str:
@@ -532,11 +552,9 @@ class HAMQTTBridge:
             logger.warning(f"[PC-Control] MQTT 状态发布失败: {exc}")
 
     def _run(self):
-        try:
-            import paho.mqtt.client as mqtt
-        except Exception as exc:
-            logger.error(f"[PC-Control] HA MQTT 需要依赖 paho-mqtt，请先安装：pip install paho-mqtt；错误: {exc}")
+        if not _ensure_paho_mqtt_installed():
             return
+        import paho.mqtt.client as mqtt
 
         cfg = self.plugin.get_config()
         self.client = mqtt.Client(client_id=f"{self.node_id}_astrbot")

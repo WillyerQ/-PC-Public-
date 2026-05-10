@@ -13,7 +13,7 @@
 
 1. 将本目录放到 `AstrBot/data/plugins/pc_control/`。
 2. 确保 AstrBot 所在机器能访问 NAS/跳板机。
-3. AstrBot 运行环境安装 `sshpass`、`ssh`；如启用 Home Assistant MQTT，还需安装 `paho-mqtt`。
+3. AstrBot 运行环境安装 `sshpass`、`ssh`；启用 Home Assistant MQTT 时插件会尝试自动安装 `paho-mqtt`。
 4. NAS/跳板机安装 `wakeonlan` 和 `curl`，并允许 SSH 登录。
 5. Windows 电脑开启 OpenSSH Server，并允许 NAS 访问。
 6. 在 AstrBot 插件管理页重载插件并填写配置。
@@ -99,13 +99,15 @@ Authorization: Bearer 你的token
 
 在 Home Assistant 中安装并启用 MQTT Broker，例如 Mosquitto broker，然后确认 MQTT 集成可用。
 
-### 2. AstrBot 安装 MQTT 依赖
+### 2. MQTT 依赖
 
-在 AstrBot 的 Python 环境安装：
+启用 Home Assistant MQTT 时，插件会强制检查并尝试自动安装：
 
 ```bash
-pip install paho-mqtt
+python -m pip install paho-mqtt>=1.6.1
 ```
+
+如果 AstrBot 环境没有联网或没有安装权限，请手动在 AstrBot 使用的 Python 环境里执行上面的命令。
 
 ### 3. 插件里填写 HA MQTT 配置
 
@@ -134,7 +136,7 @@ switch.电脑_电源
 - HA 的 MQTT 集成是否启用了 Discovery
 - `ha_mqtt_discovery_prefix` 是否为 `homeassistant`
 - AstrBot 日志里是否有 `HA MQTT 已连接并发布自动发现配置`
-- AstrBot 环境是否安装了 `paho-mqtt`
+- AstrBot 日志里 `paho-mqtt` 是否自动安装成功；失败时请手动安装
 
 ### 4. 米家如何间接控制
 

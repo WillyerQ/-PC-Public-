@@ -1,113 +1,102 @@
-# PC 远程控制插件
+# PC 远程控制 / 米家自动化桥接插件
 
-通过 AstrBot 指令、Web 控制台或米家自动化 HTTP API 远程管理你的 PC。
+这是一个按 AstrBot Star 插件规范重写的 PC 远程控制插件，可通过：
 
-## 功能
+- AstrBot 指令：`/pc wol`、`/pc off`、`/pc status`、`/pc nas`、`/pc config`
+- Web 控制台：浏览器操作
+- HTTP API：给米家/小米 IoT 自动化或其它 Webhook 调用
 
-| 功能 | 说明 |
-|------|------|
-| 📡 WOL 网络唤醒 | 通过 NAS/跳板机发送魔术包唤醒电脑 |
-| 🔌 远程关机 | 通过 NAS 转发 SSH 到 Windows 发送关机指令 |
-| 🔄 状态检查 | 查询电脑在线状态和指定进程是否运行 |
-| 📡 NAS 测试 | 测试 NAS 到指定 URL 的连通性 |
-| ⚙️ Web 控制台 | 浏览器上操作和修改本地覆盖配置 |
+实现远程 WOL 唤醒、Windows 关机、进程状态检查和 NAS 连通性测试。
 
 ## 安装
 
-1. 将插件目录放入 `AstrBot/data/plugins/`
-2. 确保 AstrBot 所在环境可用 `sshpass`、`ssh`
-3. NAS/跳板机需可 SSH 登录，且安装 `wakeonlan`
-4. 目标 Windows 电脑需开启 OpenSSH Server
-5. AstrBot WebUI → 插件管理 → 重载插件
-6. 在插件配置页填写 NAS 和 PC 的连接信息
+1. 将本目录放到 `AstrBot/data/plugins/pc_control/`。
+2. 确保 AstrBot 所在机器能访问 NAS/跳板机。
+3. AstrBot 运行环境安装 `sshpass`、`ssh`。
+4. NAS/跳板机安装 `wakeonlan` 和 `curl`，并允许 SSH 登录。
+5. Windows 电脑开启 OpenSSH Server，并允许 NAS 访问。
+6. 在 AstrBot 插件管理页重载插件并填写配置。
 
-## 配置
+## 关键配置
 
 | 配置项 | 说明 |
-|--------|------|
-| web_host | Web 控制台监听地址，默认 `0.0.0.0` |
-| web_port | Web 控制台端口，默认 `5800` |
-| api_token | HTTP API Token，可选；填写后 `/api/*` 需要鉴权 |
-| nas_ip | NAS / 跳板机 IP |
-| nas_user | NAS SSH 用户名 |
-| nas_pass | NAS SSH 密码 |
-| pc_ip | 目标电脑内网 IP |
-| pc_user | Windows 登录用户名 |
-| pc_pass | Windows 登录密码 |
-| pc_mac | 目标电脑 MAC 地址 |
-| broadcast_ip | WOL 广播地址 |
-| game_process | 状态检查使用的进程名，默认 `StarRail.exe` |
-| nas_target | NAS 连通性测试 URL |
+|---|---|
+| `web_host` / `web_port` | HTTP/Web 控制台监听地址和端口，默认 `0.0.0.0:5800` |
+| `api_token` | HTTP API 鉴权 Token，强烈建议填写 |
+| `allow_unsafe_without_token` | 未配置 Token 时是否允许控制请求，仅建议内网临时测试开启 |
+| `nas_ip` / `nas_user` / `nas_pass` / `nas_ssh_port` | NAS/跳板机 SSH 信息 |
+| `pc_ip` / `pc_user` / `pc_pass` / `pc_ssh_port` | Windows SSH 信息 |
+| `pc_mac` / `broadcast_ip` | WOL 唤醒需要的 MAC 与广播地址 |
+| `game_process` | 状态检查匹配的进程名 |
+| `shutdown_delay` | 关机延迟秒数 |
 
-Web 控制台保存的本地覆盖配置会写入：
+插件本地覆盖配置写入：
 
 ```text
 AstrBot/data/plugin_data/pc_control/config.json
 ```
 
-日志写入：
+操作审计日志写入：
 
 ```text
 AstrBot/data/plugin_data/pc_control/logs/pc_control.log
 ```
 
-## 使用
+## HTTP API
 
-### Web 控制台
+所有接口支持 `GET`；`/api/config` 保存配置使用 `POST JSON`。
 
-浏览器打开：
+| 接口 | 别名 | 说明 |
+|---|---|---|
+| `/health` | - | 健康检查，无需鉴权 |
+| `/api/wol` | `/mi/wol`、`/mi/power_on` | 唤醒电脑 |
+| `/api/shutdown` | `/mi/shutdown`、`/mi/power_off` | 关闭电脑 |
+| `/api/status` | `/mi/status` | 检查电脑/目标进程状态 |
+| `/api/nas` | `/mi/nas` | 测试 NAS 到目标 URL 的连通性 |
+| `/api/config` | `/mi/config` | 读取/保存脱敏配置 |
 
-```text
-http://你的服务器IP:5800
-```
+鉴权方式任选一种：
 
-### HTTP API / 米家自动化
-
-```text
-唤醒: http://你的服务器IP:5800/api/wol
-关机: http://你的服务器IP:5800/api/shutdown
-状态: http://你的服务器IP:5800/api/status
-NAS测试: http://你的服务器IP:5800/api/nas
-```
-
-方法选 **GET**。
-
-如果配置了 `api_token`，请求需带：
-
-```text
+```http
 X-Api-Token: 你的token
-```
-
-或：
-
-```text
 Authorization: Bearer 你的token
 ```
 
-### QQ / IM 指令
+或在 URL 后追加：
 
 ```text
-/pc wol     唤醒电脑
-/pc off     关机
-/pc status  检查状态
-/pc nas     测试 NAS
-/pc config  查看脱敏配置
+?token=你的token
 ```
 
-## AstrBot 规范适配
+## 米家 / 小米 IoT 自动化建议
 
-- 插件元数据在 `metadata.yaml`
-- WebUI 配置 schema 在 `_conf_schema.json`
-- 运行数据不写入插件源码目录，统一存储到 `data/plugin_data/pc_control/`
-- 旧版本插件目录下的 `config.json` 和 `logs/` 会在启动时尝试迁移
-- 使用 AstrBot `logger` 输出日志，文件日志仅保存操作审计
-
-## 文件结构
+在小米 IoT 平台按产品工作流完成产品创建、设备调试、联调和发布后，可将自动化动作配置为请求本插件的 HTTP URL。示例：
 
 ```text
-astrbot_plugin_pc_control/
-├── metadata.yaml       # 插件元数据
-├── _conf_schema.json   # WebUI 配置模式
-├── main.py             # 主逻辑（含 Web 控制台）
-└── README.md           # 本文件
+开机：http://你的AstrBot服务器:5800/mi/power_on?token=你的token
+关机：http://你的AstrBot服务器:5800/mi/power_off?token=你的token
+状态：http://你的AstrBot服务器:5800/mi/status?token=你的token
 ```
+
+如果平台支持自定义 Header，优先使用 `X-Api-Token`，避免 Token 出现在 URL 日志中。
+
+> 安全提示：不要把控制端口直接暴露到公网。建议使用内网、VPN、反向代理鉴权或防火墙白名单。
+
+## AstrBot 指令
+
+```text
+/pc wol      唤醒电脑
+/pc off      关闭电脑
+/pc status   检查在线与目标进程
+/pc nas      测试 NAS 连通性
+/pc config   查看脱敏配置
+```
+
+## 相比旧版的重写点
+
+- 使用 `@register`、`@filter.command_group` 等 AstrBot Star 插件风格组织代码。
+- 配置 schema 独立在 `_conf_schema.json`。
+- 运行数据不写插件源码目录，统一放入 `data/plugin_data/pc_control/`。
+- HTTP API 同时提供 `/api/*` 与面向米家自动化更直观的 `/mi/*` 别名。
+- 默认要求 Token；避免误暴露控制接口。
+- 增加 SSH 端口、关机延迟、CORS、健康检查与更清晰的 JSON 返回。

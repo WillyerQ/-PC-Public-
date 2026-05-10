@@ -1,26 +1,32 @@
 {
   "web_host": {
-    "description": "Web 控制台监听地址",
+    "description": "HTTP/Web 控制台监听地址",
     "type": "string",
     "default": "0.0.0.0",
-    "hint": "默认 0.0.0.0；如只允许本机访问可填 127.0.0.1"
+    "hint": "默认 0.0.0.0；如只允许本机反代访问可填 127.0.0.1"
   },
   "web_port": {
-    "description": "Web 控制台端口",
+    "description": "HTTP/Web 控制台端口",
     "type": "int",
     "default": 5800
   },
   "api_token": {
-    "description": "HTTP API 访问 Token（可选）",
+    "description": "HTTP API Token（强烈建议填写）",
     "type": "string",
     "default": "",
-    "hint": "填写后 /api/* 需要 Header: X-Api-Token 或 Authorization: Bearer <token>"
+    "hint": "米家或浏览器请求可使用 Header: X-Api-Token / Authorization: Bearer <token>，也可追加 ?token=<token>"
+  },
+  "allow_unsafe_without_token": {
+    "description": "未配置 Token 时仍允许 HTTP 控制请求",
+    "type": "bool",
+    "default": false,
+    "hint": "仅建议在完全可信的内网临时测试时开启"
   },
   "nas_ip": {
-    "description": "NAS/跳板机 IP 地址（用于 SSH 转发 WOL 和关机指令）",
+    "description": "NAS/跳板机 IP 地址",
     "type": "string",
     "default": "",
-    "hint": "你的 NAS 或中转服务器 IP"
+    "hint": "插件会先 SSH 到 NAS，再发送 WOL 或转发到 Windows"
   },
   "nas_user": {
     "description": "NAS SSH 用户名",
@@ -30,30 +36,42 @@
   "nas_pass": {
     "description": "NAS SSH 密码",
     "type": "string",
-    "default": "",
-    "hint": "NAS 的 SSH 登录密码"
+    "default": ""
   },
-  "pc_ip": {
-    "description": "目标电脑的内网 IP",
+  "nas_ssh_port": {
+    "description": "NAS SSH 端口",
+    "type": "int",
+    "default": 22
+  },
+  "nas_target": {
+    "description": "NAS 连通性测试 URL",
     "type": "string",
     "default": "",
-    "hint": "如 192.168.31.206",
+    "hint": "例如 http://192.168.31.1 或你的健康检查地址"
+  },
+  "pc_ip": {
+    "description": "目标 Windows 电脑 IP",
+    "type": "string",
+    "default": "",
     "obvious_hint": true
   },
   "pc_user": {
-    "description": "Windows 登录用户名",
+    "description": "Windows SSH 用户名",
     "type": "string",
-    "default": "",
-    "hint": "用于 SSH 连接和关机指令"
+    "default": ""
   },
   "pc_pass": {
-    "description": "Windows 登录密码",
+    "description": "Windows SSH 密码",
     "type": "string",
-    "default": "",
-    "hint": "用于 SSH 连接和关机指令，仅本地存储"
+    "default": ""
+  },
+  "pc_ssh_port": {
+    "description": "Windows SSH 端口",
+    "type": "int",
+    "default": 22
   },
   "pc_mac": {
-    "description": "目标电脑的 MAC 地址（WOL 唤醒用）",
+    "description": "目标电脑 MAC 地址（WOL 用）",
     "type": "string",
     "default": "",
     "hint": "如 AA:BB:CC:DD:EE:FF",
@@ -63,17 +81,16 @@
     "description": "WOL 广播地址",
     "type": "string",
     "default": "192.168.31.255",
-    "hint": "根据你的局域网网段填写"
+    "hint": "根据局域网网段填写，例如 192.168.1.255"
   },
   "game_process": {
-    "description": "游戏/目标进程名",
+    "description": "状态检查时匹配的进程名",
     "type": "string",
-    "default": "StarRail.exe",
-    "hint": "状态检查时使用"
+    "default": "StarRail.exe"
   },
-  "nas_target": {
-    "description": "NAS 连通性测试 URL",
-    "type": "string",
-    "default": ""
+  "shutdown_delay": {
+    "description": "Windows 关机延迟秒数",
+    "type": "int",
+    "default": 10
   }
 }

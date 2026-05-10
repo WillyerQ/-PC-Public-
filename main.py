@@ -557,7 +557,13 @@ class HAMQTTBridge:
         import paho.mqtt.client as mqtt
 
         cfg = self.plugin.get_config()
-        self.client = mqtt.Client(client_id=f"{self.node_id}_astrbot")
+        # Mosquitto/HA 对 MQTT 3.1 的 client_id 长度/字符较敏感；强制 MQTT v3.1.1 并限制 client_id。
+        client_id = self._safe_node_id(f"pc_{self.node_id}")[:23]
+        try:
+            self.client = mqtt.Client(client_id=client_id, protocol=mqtt.MQTTv311)
+        except TypeError:
+            # 兼容 paho-mqtt 2.x 的 CallbackAPIVersion 签名变化。
+            self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, client_id=client_id, protocol=mqtt.MQTTv311)
         username = str(cfg.get("ha_mqtt_username") or "")
         password = str(cfg.get("ha_mqtt_password") or "")
         if username:
@@ -586,7 +592,8 @@ class HAMQTTBridge:
 
     def _on_connect(self, client: Any, userdata: Any, flags: Any, rc: int, *extra: Any):
         if rc != 0:
-            logger.error(f"[PC-Control] HA MQTT 连接失败，返回码: {rc}")
+            reason = {1: "协议版本不支持", 2: "客户端标识不合法", 3: "Broker 不可用", 4: "用户名或密码错误", 5: "未授权"}.get(rc, "未知错误")
+            logger.error(f"[PC-Control] HA MQTT 连接失败，返回码: {rc}（{reason}）。请检查 MQTT 地址、端口、账号密码，以及 ha_mqtt_node_id 是否只含字母数字/下划线/短横线")
             return
         self.connected.set()
         client.publish(self.availability_topic, "online", retain=True)
@@ -598,7 +605,8 @@ class HAMQTTBridge:
     def _on_disconnect(self, client: Any, userdata: Any, rc: int, *extra: Any):
         self.connected.clear()
         if rc:
-            logger.warning(f"[PC-Control] HA MQTT 连接断开，返回码: {rc}")
+            reason = {1: "协议版本不支持", 2: "客户端标识不合法", 3: "Broker 不可用", 4: "用户名或密码错误", 5: "未授权"}.get(rc, "网络中断或 Broker 主动断开")
+            logger.warning(f"[PC-Control] HA MQTT 连接断开，返回码: {rc}（{reason}）")
 
     def _on_message(self, client: Any, userdata: Any, message: Any):
         payload = message.payload.decode("utf-8", errors="ignore").strip().upper()
